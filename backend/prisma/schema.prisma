@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  EMPLOYEE
+  SUPPORT
+  ADMIN
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  firstName String   @db.VarChar(255)
+  lastName  String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdTickets  Ticket[]  @relation("TicketCreatedBy")
+  assignedTickets Ticket[]  @relation("TicketAssignedTo")
+  comments        Comment[]
+  assets          Asset[]
+}
+
+model Ticket {
+  id           String         @id @default(uuid()) @db.Uuid
+  title        String         @db.VarChar(255)
+  description  String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  createdById  String         @db.Uuid
+  assignedToId String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  claimedAt    DateTime?
+
+  createdBy  User      @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  assignedTo User?     @relation("TicketAssignedTo", fields: [assignedToId], references: [id])
+  comments   Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  userId    String   @db.Uuid
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Asset {
+  id              String   @id @default(uuid()) @db.Uuid
+  assetTag        String?  @db.VarChar(255)
+  hostname        String?  @db.VarChar(255)
+  serialNumber    String?  @db.VarChar(255)
+  manufacturer    String?  @db.VarChar(255)
+  model           String?  @db.VarChar(255)
+  type            String
+  operatingSystem String?  @db.VarChar(255)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String?  @db.Uuid
+
+  user User? @relation(fields: [userId], references: [id])
+}
